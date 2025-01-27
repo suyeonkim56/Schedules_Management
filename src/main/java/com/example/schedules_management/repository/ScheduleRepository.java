@@ -3,7 +3,9 @@ package com.example.schedules_management.repository;
 import com.example.schedules_management.dto.ScheduleResponseDto;
 import com.example.schedules_management.entity.Schedule;
 
+import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 
 public interface ScheduleRepository {
 
@@ -11,7 +13,9 @@ public interface ScheduleRepository {
 
     List<ScheduleResponseDto> findAllSchedules();
 
-    Schedule findScheduleByID(Long id);
+    Optional<Schedule> findScheduleByID(Long id);
 
-    void deleteSchedule(Long id);
+    int updateSchedule(Long id, String writer, String contents, String password);
+
+    int deleteSchedule(Long id, String password);
 }

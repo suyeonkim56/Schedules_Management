@@ -6,9 +6,11 @@ import com.example.schedules_management.entity.Schedule;
 import com.example.schedules_management.repository.ScheduleRepository;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
+import java.util.Optional;
 
 @Service
 public class ScheduleServiceImpl implements ScheduleService {
@@ -31,14 +33,14 @@ public class ScheduleServiceImpl implements ScheduleService {
 
     @Override
     public ScheduleResponseDto findScheduleByID(Long id) {
-        Schedule schedule = scheduleRepository.findScheduleByID(id);
+        Optional<Schedule> optionalSchedule = scheduleRepository.findScheduleByID(id);
 
         //NPL 검증
-        if(schedule == null)
+        if(optionalSchedule.isEmpty())
         {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Does not exist id = " + id);
         }
-        return new ScheduleResponseDto(schedule);
+        return new ScheduleResponseDto(optionalSchedule.get());
     }
 
 
@@ -47,52 +49,33 @@ public class ScheduleServiceImpl implements ScheduleService {
         return scheduleRepository.findAllSchedules();
     }
 
+    @Transactional
     @Override
     public ScheduleResponseDto updateSchedule(Long id, String contents, String writer, String password) {
-        Schedule schedule = scheduleRepository.findScheduleByID(id);
-
-        //NPL 검증
-        if(schedule == null)
-        {
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Does not exist id = " + id);
-        }
-
         //필수값 검증
         if (contents == null || writer == null || password == null) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "contents, writer and password are required values");
         }
 
-        //비밀번호 일치
-        if(schedule.getPassword().equals(password))
+        int updatedSchedule = scheduleRepository.updateSchedule(id, contents, writer, password);
+
+        //NPL 검증
+        if(updatedSchedule == 0)
         {
-            schedule.update(contents, writer);
-            return new ScheduleResponseDto(schedule);
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Does not exist id = " + id + "OR not equal password.");
         }
-        else
-        {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Password is not equal");
-        }
+
+        Optional<Schedule> optionalSchedule = scheduleRepository.findScheduleByID(id);
+
+        return new ScheduleResponseDto(optionalSchedule.get());
     }
 
     @Override
     public void deleteSchedule(Long id, String password) {
-        Schedule schedule = scheduleRepository.findScheduleByID(id);
-
-        //NPL 검증
-        if(schedule == null)
+        int deletedSchedule = scheduleRepository.deleteSchedule(id, password);
+        if(deletedSchedule == 0)
         {
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Does not exist id = " + id);
-        }
-
-        //비밀번호 일치
-        if(schedule.getPassword().equals(password))
-        {
-            scheduleRepository.deleteSchedule(id);
-        }
-        else
-        {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Password is not equal");
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,"Password is not equal");
         }
     }
-
 }
